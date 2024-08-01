@@ -1,0 +1,31 @@
+#Set Variables
+$SiteURL = ""
+$LibraryName = "Documents"
+$ReportOutput = "C:\Temp\getAllFiles.csv"
+#Connect to SharePoint Online site
+Connect-PnPOnline -Url $SiteURL -Interactive
+ 
+$FileData = @()
+#Iterate through all files
+$ItemCounter = 0 
+
+
+$ListItems = Get-PnPListItem -List $LibraryName -PageSize 500 -Fields Author, Editor, Created, File_x0020_Type, File_x0020_Size, Versions
+
+Foreach ($Item in $ListItems)
+{
+
+            $FileData += New-Object PSObject -Property ([ordered]@{
+            Name              = $Item["FileLeafRef"]
+            Type              = $Item.FileSystemObjectType
+            FileType          = $Item["File_x0020_Type"]
+            FileSize =  [Math]::Round(($Item.FieldValues.File_x0020_Size/1KB),2)
+            RelativeURL       = $Item["FileRef"]
+            CreatedByEmail    = $Item["Author"].Email
+            CreatedOn         = $Item["Created"]
+            Modified          = $Item["Modified"]
+            ModifiedByEmail   = $Item["Editor"].Email
+        })
+}
+
+$FileData | Export-Csv -Path $ReportOutput -NoTypeInformation -Delimiter ";"
